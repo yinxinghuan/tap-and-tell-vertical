@@ -5,7 +5,11 @@
 // Cache lives in localStorage. Cleared if the source avatar URL changes
 // (e.g. user updates their Aigram avatar — different URL → cache miss → fresh prep).
 
-const KEY = 'tap-and-tell/photoreal-prep/v1';
+// v2 — prep prompt was rewritten 2026-05-28 to preserve non-human / costumed
+// avatars (a ghost-in-a-sheet was being turned into a generic woman). Bumping
+// the cache key invalidates everyone's old (wrong-character) intermediate so
+// it'll be re-prep'd on their next makeYours.
+const KEY = 'tap-and-tell/photoreal-prep/v2';
 
 interface Entry {
   source: string;       // original avatar URL we prep'd from

@@ -12,7 +12,11 @@ const fs = require('fs');
 const OUT_GAME = path.resolve(__dirname, 'public/poster.png');
 const OUT_LIST = '/Users/yin/code/games/games/posters/tap-and-tell-vertical.png';
 
-const CABIN = 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779827243649029.webp';
+// v2 poster cover: bookstore aisle from the new diverse hero set.
+// Vertical composition matches the "Vertical" edition identity.
+// Use a base64 data URL to dodge any cross-origin / network issues in puppeteer.
+const COVER_PATH = '/tmp/bookstore_cover.webp';
+const COVER = `data:image/webp;base64,${fs.readFileSync(COVER_PATH).toString('base64')}`;
 
 const HTML = `<!doctype html><html><head><meta charset=utf-8>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;1,500;1,700&display=swap">
@@ -27,7 +31,7 @@ const HTML = `<!doctype html><html><head><meta charset=utf-8>
   }
   .scene {
     position: absolute; inset: 0;
-    background: url('${CABIN}') center center / cover;
+    background: url('${COVER}') center center / cover;
   }
   .top-grad {
     position: absolute; inset: 0;

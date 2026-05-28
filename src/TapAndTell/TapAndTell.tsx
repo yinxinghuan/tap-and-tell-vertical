@@ -61,6 +61,14 @@ export default function TapAndTell() {
   const [wallStartIdx, setWallStartIdx] = useState(0);
   const [imgRetry, setImgRetry] = useState<GenImgRetry | null>(null);
   const wall = useWallEntries();
+  // Track the latest archive in a ref so consecutive publishes in the SAME
+  // session see each other. useGameSave's savedData state doesn't update on
+  // persist, so without this ref a second publish reads the first publish's
+  // stale (null) snapshot and overwrites story 1 with just story 2.
+  const archiveRef = useRef<StorySave[]>([]);
+  useEffect(() => {
+    if (save.savedData?.stories) archiveRef.current = save.savedData.stories;
+  }, [save.savedData]);
 
   // Identity ─────────────────────────────────────────────────────────────────
   const [avatar, setAvatar] = useState<Avatar>(DEMO_AVATAR);
@@ -307,8 +315,8 @@ export default function TapAndTell() {
       author_name: avatar.name,
       ts: Date.now(),
     };
-    const prev = save.savedData?.stories ?? [];
-    const nextStories = [...prev, story];
+    const nextStories = [...archiveRef.current, story];
+    archiveRef.current = nextStories;        // mutate ref immediately so a follow-up publish in the same session sees it
     save.persist({ stories: nextStories });
     setPublishState('published');
     wall.refresh();

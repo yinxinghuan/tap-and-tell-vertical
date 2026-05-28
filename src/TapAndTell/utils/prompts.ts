@@ -53,16 +53,21 @@ export const ARCHETYPES: SceneArchetype[] = [
 ];
 
 // Photoreal-prep prompt — used as the first img2img step to translate any
-// avatar (stylized AI art, anime, painted, etc) into a photoreal portrait
-// while preserving identity markers (hair color, clothing, face structure).
-// Without this step, stylized avatars cause style mismatch when scene-genning
-// a photoreal cinematic frame — see /ab/ A/B test page for evidence.
+// avatar (stylized AI art, anime, painted, costumed, non-human, etc) into
+// a photoreal version that still IS the original subject. Earlier version
+// said "the same person" which forced human interpretation — broke costume
+// avatars (a ghost-in-a-sheet became a generic woman). New prompt uses
+// "the same subject/character" and asks the model to preserve whatever
+// shape/clothing/identity markers are in the reference, human or not.
+// See /ab/ A/B test page.
 export const PHOTOREAL_PREP_PROMPT =
-  'realistic photographic portrait of the same person from the reference, ' +
-  'photoreal, natural skin texture with subtle pores and imperfections, ' +
-  'soft studio lighting, head and shoulders shot, neutral background, ' +
-  'preserve hair color and clothing colors from the reference, ' +
-  'high detail, photoreal, 1:1';
+  'photoreal version of the exact same subject from the reference image — ' +
+  'preserve the silhouette, clothing, costume, accessories, head shape, hair, ' +
+  'face, and any identifying markings WHETHER HUMAN OR NON-HUMAN CHARACTER ' +
+  '(if the reference is a ghost in a sheet, render a ghost in a sheet ' +
+  'photorealistically; if a mascot or costume, keep that costume; if a person, ' +
+  'keep that person). Natural material texture, soft studio lighting, ' +
+  'head and shoulders shot, neutral background, high detail, photoreal, 1:1';
 
 // System prompt for LLM that turns a tap location + short user text into
 // (a) three chip suggestions and (b) a video prompt for the transition.
