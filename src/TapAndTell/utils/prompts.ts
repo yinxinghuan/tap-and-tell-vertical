@@ -52,22 +52,28 @@ export const ARCHETYPES: SceneArchetype[] = [
   },
 ];
 
-// Photoreal-prep prompt — used as the first img2img step to translate any
-// avatar (stylized AI art, anime, painted, costumed, non-human, etc) into
-// a photoreal version that still IS the original subject. Earlier version
-// said "the same person" which forced human interpretation — broke costume
-// avatars (a ghost-in-a-sheet became a generic woman). New prompt uses
-// "the same subject/character" and asks the model to preserve whatever
-// shape/clothing/identity markers are in the reference, human or not.
-// See /ab/ A/B test page.
+// Photoreal-prep prompt — img2img the avatar into a clean portrait that's
+// (a) photoreal style, (b) faithful to the subject (human OR non-human), and
+// (c) ISOLATED on a plain background so the downstream scene gen isn't biased
+// by the prep's background.
+//
+// History:
+//   v1: said "the same person" → forced human interpretation, broke ghost / mascot avatars.
+//   v2: added a "ghost in a sheet" example → model picked up "ghost" context and
+//       produced ghost-in-haunted-snowy-cabin intermediates, which then biased
+//       EVERY downstream scene to look like the same snowy cabin.
+//   v3 (current): no examples, focus on "isolated portrait on plain background".
+//       Costume/non-human preservation is generalized to "every distinguishing
+//       feature, whatever it is".
 export const PHOTOREAL_PREP_PROMPT =
-  'photoreal version of the exact same subject from the reference image — ' +
-  'preserve the silhouette, clothing, costume, accessories, head shape, hair, ' +
-  'face, and any identifying markings WHETHER HUMAN OR NON-HUMAN CHARACTER ' +
-  '(if the reference is a ghost in a sheet, render a ghost in a sheet ' +
-  'photorealistically; if a mascot or costume, keep that costume; if a person, ' +
-  'keep that person). Natural material texture, soft studio lighting, ' +
-  'head and shoulders shot, neutral background, high detail, photoreal, 1:1';
+  'photoreal head-and-shoulders portrait of the exact subject from the ' +
+  'reference image, completely ISOLATED on a plain neutral grey studio ' +
+  'background, soft even studio lighting, no environment or scenery, ' +
+  'preserve every distinguishing feature of the subject — silhouette, mask, ' +
+  'costume, sheet, fur, clothing, hair, face, accessories — whatever the ' +
+  'subject is (human, character, mascot, animal, ghost, etc), render the ' +
+  'same thing in a photoreal style. Natural material texture, high detail, ' +
+  'sharp focus on the subject, photoreal, 1:1';
 
 // System prompt for LLM that turns a tap location + short user text into
 // (a) three chip suggestions and (b) a video prompt for the transition.
