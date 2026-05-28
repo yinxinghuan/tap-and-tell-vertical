@@ -47,6 +47,7 @@ const DICT: Record<Locale, Record<string, string>> = {
     // Loader meta
     'loader.meta.prep':         'translating you into the frame · ~3 min',
     'loader.meta.gen-a':        'composing the opening · ~3 min',
+    'loader.meta.gen-a.scene':  'composing the {scene} scene · ~3 min',
     'loader.meta.imgRetry':     'image service is busy · retrying in {seconds}s · attempt {attempt} of {max}',
     'loader.busy.caption':      'the cloud is catching its breath…',
     'loader.meta.gen-b':        'imagining what happens next · ~3 min',
@@ -105,6 +106,7 @@ const DICT: Record<Locale, Record<string, string>> = {
     // Loader meta
     'loader.meta.prep':         '正在把你画进画面 · 约 3 分钟',
     'loader.meta.gen-a':        '正在画开场 · 约 3 分钟',
+    'loader.meta.gen-a.scene':  '正在画"{scene}"场景 · 约 3 分钟',
     'loader.meta.imgRetry':     '图片服务繁忙 · {seconds} 秒后重试 · 第 {attempt}/{max} 次',
     'loader.busy.caption':      '云端在喘口气…',
     'loader.meta.gen-b':        '正在想象接下来 · 约 3 分钟',
