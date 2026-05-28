@@ -60,6 +60,7 @@ export default function TapAndTell() {
   const [publishState, setPublishState] = useState<'idle' | 'published'>('idle');
   const [wallStartIdx, setWallStartIdx] = useState(0);
   const [imgRetry, setImgRetry] = useState<GenImgRetry | null>(null);
+  const [archetypeChosen, setArchetypeChosen] = useState<string | null>(null);
   const wall = useWallEntries();
   // Track the latest archive in a ref so consecutive publishes in the SAME
   // session see each other. useGameSave's savedData state doesn't update on
@@ -128,6 +129,12 @@ export default function TapAndTell() {
   const makeYours = useCallback(async () => {
     const arch = ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
     setFrameAPrompt(arch.prompt);
+    // Diagnostic: surface which archetype + ref the model is being given.
+    // Helps debug "the model always outputs the same scene" reports — if
+    // the picks ARE varying, the bias is downstream (model interpretation),
+    // not in our pick logic.
+    setArchetypeChosen(arch.id);
+    console.log(`[makeYours] picked archetype = ${arch.id}`);
 
     try {
       // Step 1: ensure we have a photoreal intermediate (only for real avatars)
@@ -366,7 +373,9 @@ export default function TapAndTell() {
           meta={
             imgRetry?.retrying
               ? t('loader.meta.imgRetry', { seconds: imgRetry.secondsLeft ?? 0, attempt: imgRetry.attempt, max: imgRetry.maxAttempts })
-              : t('loader.meta.gen-a')
+              : (archetypeChosen
+                ? t('loader.meta.gen-a.scene', { scene: archetypeChosen })
+                : t('loader.meta.gen-a'))
           }
         />
       )}
