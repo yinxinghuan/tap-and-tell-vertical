@@ -1,0 +1,120 @@
+@bg: #000000;
+@text-1: #FFFFFF;
+@text-3: #9B9BA1;
+@brand-pink: #F5B1C7;
+@accent-purple: #7700A1;
+
+@sans: 'Inter', -apple-system, system-ui, sans-serif;
+@display: 'Montserrat', 'Inter', -apple-system, system-ui, sans-serif;
+
+.demo {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: @bg;
+  color: @text-1;
+  font-family: @sans;
+  padding: 36px 24px 64px;
+}
+
+.demo__header {
+  max-width: 1500px;
+  margin: 0 auto 32px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.demo__title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: @display;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.005em;
+  color: @text-1;
+
+  img {
+    width: 32px;
+    height: auto;
+  }
+}
+
+.demo__hint {
+  font-size: 11px;
+  color: @text-3;
+  letter-spacing: 0.04em;
+}
+
+.demo__grid {
+  max-width: 1500px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 26px;
+}
+
+.demo__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.demo__label {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 0 6px;
+}
+
+.demo__label-num {
+  font-family: @display;
+  font-weight: 600;
+  font-size: 14px;
+  color: @brand-pink;
+  letter-spacing: 0.005em;
+}
+
+.demo__label-cap {
+  font-family: @sans;
+  font-size: 11px;
+  color: @text-3;
+  letter-spacing: 0.04em;
+}
+
+.demo__phone {
+  position: relative;
+  width: 320px;
+  height: 680px;
+  border-radius: 38px;
+  background: #000;
+  padding: 8px;
+  box-shadow:
+    0 0 0 1.5px #2a2a36,
+    0 24px 50px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.demo__notch {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 22px;
+  background: #000;
+  border-radius: 12px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.demo__phone > .tt {
+  border-radius: 30px;
+  overflow: hidden;
+}
