@@ -322,6 +322,7 @@ export default function TapAndTell() {
         <div className="tt__brand-bar">
           <AlteruEmblem size={18} uColor="#F5B1C7" starColor="#FFFFFF" />
           <span className="tt__game-name">TAP &amp; TELL</span>
+          <span className="tt__game-edition">VERTICAL</span>
         </div>
         <div className="tt__phase-tag">{phaseLabel(phase)}</div>
       </div>

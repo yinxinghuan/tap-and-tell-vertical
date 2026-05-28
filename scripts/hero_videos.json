@@ -1,37 +1,9 @@
 [
   {
-    "id": "cabin",
-    "caption": "a cabin in the snow",
-    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779827243649029.webp",
-    "b_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779859812186600.webp",
-    "video_url": "https://cdn.aiwaves.tech/prodsv/telegram/video/123456/20260528-123042.mp4"
-  },
-  {
-    "id": "beach",
-    "caption": "low tide on a quiet shore",
-    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779864848152428.webp",
-    "b_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779942904898572.webp",
-    "video_url": "https://cdn.aiwaves.tech/prodsv/telegram/video/123456/20260528-123807.mp4"
-  },
-  {
-    "id": "alley",
-    "caption": "a quiet alley meets the rain",
-    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779865007698654.webp",
-    "b_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779868789864146.webp",
-    "video_url": "https://cdn.aiwaves.tech/prodsv/telegram/video/123456/20260527-160253.mp4"
-  },
-  {
-    "id": "greenhouse",
-    "caption": "morning finds the greenhouse",
-    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779865167403308.webp",
-    "b_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779865255984122.webp",
-    "video_url": "https://cdn.aiwaves.tech/prodsv/telegram/video/123456/20260528-125358.mp4"
-  },
-  {
-    "id": "desert",
-    "caption": "the desert holds its breath",
-    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779865530315397.webp",
-    "b_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779865617887591.webp",
-    "video_url": "https://cdn.aiwaves.tech/prodsv/telegram/video/123456/20260528-124816.mp4"
+    "id": "kitchen",
+    "caption": "the kettle starts to whistle",
+    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779972974431904.webp",
+    "b_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779973077762061.webp",
+    "video_url": "https://cdn.aiwaves.tech/prodsv/telegram/video/123456/20260528-205932.mp4"
   }
 ]

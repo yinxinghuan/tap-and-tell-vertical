@@ -79,6 +79,21 @@
   color: @text-1;
 }
 
+// "VERTICAL" edition tag — distinguishes v2.0 from the 1:1 Tap & Tell
+// in places where both are visible (Aigram games list, share cards, etc).
+.tt__game-edition {
+  font-family: @sans;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: @brand-pink;
+  border: 1px solid @brand-pink;
+  border-radius: 4px;
+  padding: 1px 6px 2px;
+  margin-left: 2px;
+  line-height: 1;
+}
+
 .tt__phase-tag {
   font-family: @sans;
   font-size: 9px;
@@ -482,8 +497,8 @@
   align-items: center;
   justify-content: flex-start;
   gap: 0;
-  padding: 0;
-  position: relative;          // anchor for floating prompt sheet
+  padding: 4px 14px 14px;       // breathing room from screen edges
+  position: relative;            // anchor for floating prompt sheet
   overflow: hidden;
 }
 
@@ -493,8 +508,8 @@
   aspect-ratio: 3 / 4;
   max-width: 100%;
   max-height: 100%;
-  margin: 0;
-  border-radius: 0;            // edge-to-edge inside the vertical viewport
+  margin: 0 auto;
+  border-radius: @radius-lg;     // rounded corners for polish
   overflow: hidden;
   background: #000;
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55), inset 0 0 0 2px @brand-pink;
@@ -560,23 +575,24 @@
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-// Floating bottom sheet — overlays bottom of canvas with backdrop blur.
-// Slides up on first tap; user keeps seeing the upper portion of Frame A
-// (and their ripple marker) above the sheet.
+// Floating bottom sheet — overlays the lower part of the canvas with
+// backdrop blur. Aligned to the canvas's inset (matches its padding +
+// border-radius) so it looks like part of the canvas, not a separate widget.
 .tt-prompt {
   position: absolute;
-  left: 0; right: 0; bottom: 0;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 14px 14px max(14px, env(safe-area-inset-bottom));
-  background: linear-gradient(180deg,
-    rgba(10, 10, 15, 0.0) 0%,
-    rgba(10, 10, 15, 0.78) 35%,
-    rgba(10, 10, 15, 0.92) 100%);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-top: 1px solid @border-subtle;
+  background: rgba(10, 10, 15, 0.62);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: @radius-lg;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
   z-index: 5;
   animation: tt-sheet-slide-in 0.28s ease-out;
 }
