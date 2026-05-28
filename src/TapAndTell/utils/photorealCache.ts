@@ -5,11 +5,13 @@
 // Cache lives in localStorage. Cleared if the source avatar URL changes
 // (e.g. user updates their Aigram avatar — different URL → cache miss → fresh prep).
 
-// v2 — prep prompt was rewritten 2026-05-28 to preserve non-human / costumed
-// avatars (a ghost-in-a-sheet was being turned into a generic woman). Bumping
-// the cache key invalidates everyone's old (wrong-character) intermediate so
-// it'll be re-prep'd on their next makeYours.
-const KEY = 'tap-and-tell/photoreal-prep/v2';
+// v3 — prep prompt rewritten AGAIN. v2 included a "if the reference is a
+// ghost in a sheet, render a ghost in a sheet" example which the model
+// interpreted as a SCENE directive: produced ghost-in-snowy-cabin
+// intermediates → every downstream scene gen got biased to look like a
+// snowy cabin. v3 removes all examples, emphasizes plain background and
+// isolation. Bumping the cache key invalidates everyone's v2 intermediates.
+const KEY = 'tap-and-tell/photoreal-prep/v3';
 
 interface Entry {
   source: string;       // original avatar URL we prep'd from
