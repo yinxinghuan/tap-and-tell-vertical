@@ -1,11 +1,13 @@
 // Wrap shared useGenImage.generate() with auto-retry on HTTP 429 rate limits.
-// The platform proxy enforces a per-IP / per-user cool-down on genl_image
-// (~75s). Two img2img calls back-to-back inside `makeYours` (photoreal-prep
-// followed by scene gen) will trip this — and from the user's POV the game
-// just dies on a generic "gen-image failed: HTTP 429" toast.
+// The platform proxy enforces a per-IP cool-down on genl_image. As of
+// 2026-05-29 the effective gap is ~20s (colleague set 15s; observed slightly
+// higher with jitter). Two img2img calls back-to-back inside `makeYours`
+// (photoreal-prep followed by scene gen) can still trip this on fast paths
+// or when another user on the same IP is generating.
 //
-// This wrapper retries up to N times with 90s backoff. Fires onRetry so the
-// orchestrator can surface "the cloud is busy, hold on…" in the loader.
+// Retries up to N times with 25s backoff (covers the ~20s window + jitter).
+// Fires onRetry so the orchestrator can surface "the cloud is busy, hold on…"
+// in the loader.
 
 import type { UseGenImage, GenImageOptions } from '@shared/runtime';
 
@@ -21,7 +23,7 @@ export async function genImageWithRetry(
   opts: GenImageOptions,
   onProgress?: (info: RetryProgress) => void,
   maxAttempts = 4,
-  backoffMs = 80_000,
+  backoffMs = 25_000,
 ): Promise<string> {
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
