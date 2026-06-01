@@ -1,10 +1,10 @@
 // Tap & Tell — main orchestrator + all phases. AlterU-branded v0.2.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGenImage, callAigramAPI, telegramId, isInAigram } from '@shared/runtime';
 import { useGameSave } from '@shared/save';
 import { generateVideo, type ProgressInfo } from './utils/videoApi';
-import { planBeat, pickTeaser, type BeatPlan } from './utils/aiHelpers';
+import { planBeat, pickTeaser, inventScenePrompt, type BeatPlan } from './utils/aiHelpers';
 import { ARCHETYPES, PHOTOREAL_PREP_PROMPT } from './utils/prompts';
 import { loadHeroEntries, getSeed, type HeroEntry } from './utils/heroData';
 import { getPhotoreal, setPhotoreal } from './utils/photorealCache';
@@ -52,6 +52,16 @@ const DEMO_AVATAR: Avatar = {
   isDemo: true,
 };
 
+// Sentinel hero appended to the picker. Tapping it routes makeYours through
+// inventScenePrompt (LLM-generated fresh archetype) instead of looking up a
+// baked one. id is namespaced so it can never collide with a real hero id.
+const RANDOM_HERO_ID = '__random__';
+const RANDOM_HERO: HeroEntry = {
+  id: RANDOM_HERO_ID,
+  caption: 'a scene no one has seen yet',
+  video_url: '',
+};
+
 export default function TapAndTell() {
   const genImg = useGenImage();
   const save = useGameSave<StoryArchive>('tap-and-tell');
@@ -96,6 +106,12 @@ export default function TapAndTell() {
   useEffect(() => {
     loadHeroEntries().then(setHeroEntries);
   }, []);
+  // Append the Surprise-me sentinel as the LAST picker entry. Live entries
+  // come first so the random card reads as "or one we haven't shown you".
+  const heroesForPicker = useMemo(
+    () => [...heroEntries, RANDOM_HERO],
+    [heroEntries],
+  );
 
   // Story state ─────────────────────────────────────────────────────────────
   const [frameAPrompt, setFrameAPrompt] = useState('');
@@ -129,17 +145,41 @@ export default function TapAndTell() {
   //      picker. NO random pick — the picker selection IS the scene.
   // Demo avatar (geometric svg) skips step 1 and falls back to plain txt2img.
   const makeYours = useCallback(async (hero: HeroEntry) => {
-    // Look up archetype by hero id. Archetype ids must match hero ids; if a
-    // hero loaded from hero_videos.json has no matching archetype yet, fall
-    // back to a generic prompt built from the caption so the user still gets
-    // a usable opening frame instead of a hard error.
-    const arch = ARCHETYPES.find(a => a.id === hero.id);
-    const prompt = arch?.prompt
-      ?? `cinematic still of the figure in the scene of ${hero.caption}, ` +
-         `atmospheric, photoreal, 1:1`;
+    // Resolve the scene prompt: random sentinel → LLM-invented fresh scene;
+    // otherwise → archetype lookup by hero.id (matches because picker and
+    // archetype pool share one id space). Caption-based fallback for any
+    // future hero that arrives without a matching archetype.
+    let prompt: string;
+    let labelForLoader: string;
+    if (hero.id === RANDOM_HERO_ID) {
+      // Show the loader immediately so the LLM round-trip doesn't look like a
+      // dead tap. archetypeChosen stays null until invented to show the
+      // generic "composing the opening" line, then upgrades.
+      setPhase('gen-a');
+      setArchetypeChosen(null);
+      try {
+        const invented = await inventScenePrompt();
+        prompt = invented.prompt;
+        labelForLoader = invented.caption;
+        console.log(`[makeYours] random → invented "${invented.caption}"`);
+      } catch (e) {
+        // Fall back to a random ARCHETYPE so the user still gets a scene
+        // instead of a hard error. Log + carry on.
+        const fb = ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
+        prompt = fb.prompt;
+        labelForLoader = fb.id;
+        console.warn('[makeYours] invent failed, falling back to', fb.id, e);
+      }
+    } else {
+      const arch = ARCHETYPES.find(a => a.id === hero.id);
+      prompt = arch?.prompt
+        ?? `cinematic still of the figure in the scene of ${hero.caption}, ` +
+           `atmospheric, photoreal, 1:1`;
+      labelForLoader = arch?.id ?? hero.id;
+      console.log(`[makeYours] using hero=${hero.id} archetype=${arch?.id ?? '(fallback)'}`);
+    }
     setFrameAPrompt(prompt);
-    setArchetypeChosen(arch?.id ?? hero.id);
-    console.log(`[makeYours] using hero=${hero.id} archetype=${arch?.id ?? '(fallback)'}`);
+    setArchetypeChosen(labelForLoader);
 
     try {
       // Step 1: ensure we have a photoreal intermediate (only for real avatars)
@@ -353,7 +393,7 @@ export default function TapAndTell() {
       {phase === 'home' && (
         <HomeScreen
           avatar={avatar}
-          heroEntries={heroEntries}
+          heroEntries={heroesForPicker}
           onMakeYours={makeYours}
           onUpload={startWithUpload}
           onRemix={remixHero}
@@ -476,6 +516,14 @@ const ArrowIcon = () => (
   </svg>
 );
 
+// 4-point sparkle used as the "Surprise me" thumb glyph. Inline SVG, not emoji
+// (see feedback_no_emoji_in_ui.md — system emoji glyphs render per-OS).
+const SparkleIcon = ({ size = 24 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
+    <path d="M12 2 L13.6 9.4 L21 11 L13.6 12.6 L12 20 L10.4 12.6 L3 11 L10.4 9.4 Z" />
+  </svg>
+);
+
 export function HomeScreen({
   avatar,
   heroEntries,
@@ -515,11 +563,15 @@ export function HomeScreen({
   }, [heroIdx]);
 
   const hero = heroEntries[heroIdx] ?? heroEntries[0];
+  const isRandom = hero?.id === '__random__';
 
   return (
     <div className="tt-home">
-      <div className="tt-hero" onClick={() => hero && onRemix(hero)}>
-        {hero && (
+      <div
+        className={`tt-hero${isRandom ? ' tt-hero--random' : ''}`}
+        onClick={() => hero && onRemix(hero)}
+      >
+        {hero && !isRandom && (
           hero.video_url
             ? (
               <video
@@ -537,6 +589,12 @@ export function HomeScreen({
               ? <img src={hero.a_url} alt="" key={hero.id} />
               : null
         )}
+        {isRandom && (
+          <div className="tt-hero__random-card">
+            <SparkleIcon size={64} />
+            <span>surprise me</span>
+          </div>
+        )}
         <div className="tt-hero__overlay" />
         <div className="tt-hero__avatar">
           <img src={avatar.url} alt="" />
@@ -544,29 +602,38 @@ export function HomeScreen({
         {hero && (
           <div className="tt-hero__chip">
             <em>{hero.caption}</em>
-            <span>{t('home.hero.remix')}</span>
+            <span>{isRandom ? t('home.hero.random') : t('home.hero.remix')}</span>
           </div>
         )}
       </div>
 
       {heroEntries.length > 1 && (
         <div className="tt-thumb-rail" ref={railRef} role="tablist" aria-label="pick a scene">
-          {heroEntries.map((e, i) => (
-            <button
-              key={e.id}
-              type="button"
-              role="tab"
-              aria-selected={i === heroIdx}
-              aria-label={e.caption}
-              data-thumb-idx={i}
-              className={`tt-thumb${i === heroIdx ? ' tt-thumb--selected' : ''}`}
-              onClick={() => setHeroIdx(i)}
-            >
-              {e.a_url
-                ? <img src={e.a_url} alt="" />
-                : <video src={e.video_url} muted playsInline preload="metadata" />}
-            </button>
-          ))}
+          {heroEntries.map((e, i) => {
+            const thumbIsRandom = e.id === '__random__';
+            return (
+              <button
+                key={e.id}
+                type="button"
+                role="tab"
+                aria-selected={i === heroIdx}
+                aria-label={e.caption}
+                data-thumb-idx={i}
+                className={
+                  `tt-thumb` +
+                  (i === heroIdx ? ' tt-thumb--selected' : '') +
+                  (thumbIsRandom ? ' tt-thumb--random' : '')
+                }
+                onClick={() => setHeroIdx(i)}
+              >
+                {thumbIsRandom
+                  ? <span className="tt-thumb__sparkle"><SparkleIcon size={22} /></span>
+                  : e.a_url
+                    ? <img src={e.a_url} alt="" />
+                    : <video src={e.video_url} muted playsInline preload="metadata" />}
+              </button>
+            );
+          })}
         </div>
       )}
 

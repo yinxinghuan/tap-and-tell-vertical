@@ -183,6 +183,46 @@
     overflow: hidden;
     img { position: static; width: 100%; height: 100%; object-fit: cover; }
   }
+
+  // Hero variant for the Surprise-me sentinel — no video/image, just a
+  // dashed pink-tinted placeholder so users can tell "this is dynamic".
+  &--random {
+    background:
+      radial-gradient(circle at 30% 30%, rgba(245, 177, 199, 0.22), transparent 65%),
+      #0c0c0e;
+    outline: 1px dashed rgba(245, 177, 199, 0.45);
+    outline-offset: -8px;
+  }
+
+  &__random-card {
+    position: absolute; inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: @brand-pink;
+    pointer-events: none;
+
+    span {
+      font-family: @sans;
+      font-size: 11px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: @brand-pink;
+      opacity: 0.85;
+    }
+
+    svg {
+      filter: drop-shadow(0 4px 14px rgba(245, 177, 199, 0.45));
+      animation: tt-sparkle-pulse 3.4s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes tt-sparkle-pulse {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.92; }
+  50%      { transform: scale(1.08) rotate(8deg); opacity: 1; }
 }
 
 // Compact headline + sub for vertical layout
@@ -320,6 +360,30 @@
     opacity: 1;
     border-color: @brand-pink;
     box-shadow: 0 0 0 1px @brand-pink, 0 6px 16px rgba(245, 177, 199, 0.35);
+  }
+
+  // "Surprise me" sentinel thumb — dashed border + sparkle glyph on dark
+  // surface. Distinguishes from real-scene thumbs at a glance.
+  &--random {
+    background:
+      radial-gradient(circle at 30% 30%, rgba(245, 177, 199, 0.22), transparent 60%),
+      #141416;
+    border-style: dashed;
+    border-color: rgba(245, 177, 199, 0.55);
+    opacity: 0.85;
+
+    &.tt-thumb--selected {
+      border-style: solid;
+      border-color: @brand-pink;
+      opacity: 1;
+    }
+  }
+
+  &__sparkle {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: @brand-pink;
+    pointer-events: none;
   }
 }
 

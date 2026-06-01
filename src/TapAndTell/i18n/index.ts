@@ -31,6 +31,7 @@ const DICT: Record<Locale, Record<string, string>> = {
 
     // Home
     'home.hero.remix':         '· tap to remix',
+    'home.hero.random':        '· tap to invent a new one',
     'home.pitch.sub':          'a 5-second AI continuation, from any frame',
     'home.cta.avatarPill.demo':    'demo as',
     'home.cta.avatarPill.playing': 'playing as',
@@ -96,6 +97,7 @@ const DICT: Record<Locale, Record<string, string>> = {
 
     // Home
     'home.hero.remix':         '· 点这里重新讲一遍',
+    'home.hero.random':        '· 点这里现编一个新的',
     'home.pitch.sub':          '5 秒 AI 续片，从任意一帧开始',
     'home.cta.avatarPill.demo':    '试玩中',
     'home.cta.avatarPill.playing': '正在玩的是',

@@ -1,8 +1,9 @@
 // Helpers that talk to the platform LLM (chat.aiwaves.tech/.../game-chat).
 // Used to (a) suggest chip continuations + (b) generate the next_image_prompt
-// and video_prompt that match the current frame.
+// and video_prompt that match the current frame + (c) invent a fresh opening
+// scene on demand (Surprise me).
 
-import { STORY_SYSTEM_PROMPT } from './prompts';
+import { STORY_SYSTEM_PROMPT, INVENT_SCENE_SYSTEM_PROMPT, ARCHETYPES } from './prompts';
 
 const CHAT_URL = 'https://chat.aiwaves.tech/aigram/api/game-chat';
 
@@ -93,4 +94,56 @@ export const TEASER_LINES = [
 
 export function pickTeaser(): string {
   return TEASER_LINES[Math.floor(Math.random() * TEASER_LINES.length)];
+}
+
+// ─── Surprise me — invent a fresh opening scene ──────────────────────────────
+
+export interface InventedScene {
+  caption: string;   // ~3-6 word evocative phrase, shown in loader meta
+  prompt: string;    // full photoreal txt2img/img2img prompt
+}
+
+/**
+ * Ask the LLM to invent a brand-new opening scene that does NOT match any of
+ * the 10 baked archetypes. Used for the picker's "Surprise me" sentinel.
+ *
+ * If the LLM call fails or returns garbage, the caller is responsible for
+ * falling back — this function throws so failure modes are explicit.
+ */
+export async function inventScenePrompt(): Promise<InventedScene> {
+  const excludeList = ARCHETYPES.map(a => a.id).join(', ');
+  const user_msg =
+    `Invent ONE fresh opening scene archetype.\n` +
+    `It must NOT belong to any of these existing archetypes (different setting, ` +
+    `different time of day, different feel): ${excludeList}.\n` +
+    `Return JSON only.`;
+
+  const res = await fetch('https://chat.aiwaves.tech/aigram/api/game-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [
+        { role: 'system', content: INVENT_SCENE_SYSTEM_PROMPT },
+        { role: 'user', content: user_msg },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`invent-scene: HTTP ${res.status}`);
+  const json = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const raw = json.choices?.[0]?.message?.content ?? '';
+  const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+  const m = cleaned.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('invent-scene: no JSON in reply');
+  const obj = JSON.parse(m[0]) as Partial<InventedScene>;
+  if (typeof obj.prompt !== 'string' || !obj.prompt.trim()) {
+    throw new Error('invent-scene: missing prompt');
+  }
+  return {
+    caption: (typeof obj.caption === 'string' && obj.caption.trim())
+      ? obj.caption.trim()
+      : 'a fresh scene',
+    prompt: obj.prompt.trim(),
+  };
 }
