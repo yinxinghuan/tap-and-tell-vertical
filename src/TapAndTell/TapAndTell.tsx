@@ -9,6 +9,7 @@ import { ARCHETYPES, PHOTOREAL_PREP_PROMPT } from './utils/prompts';
 import { loadHeroEntries, getSeed, type HeroEntry } from './utils/heroData';
 import { getPhotoreal, setPhotoreal } from './utils/photorealCache';
 import { genImageWithRetry, type RetryProgress as GenImgRetry } from './utils/genImageWithRetry';
+import { preloadImage, preloadVideo } from './utils/preload';
 import AlteruEmblem from './components/AlteruEmblem';
 import WallScreen from './screens/WallScreen';
 import { useWallEntries, type WallEntry } from './utils/useWallEntries';
@@ -207,6 +208,11 @@ export default function TapAndTell() {
         { prompt, ref_url: refUrl },
         info => setImgRetry(info),
       );
+      // Wait for the browser to fetch + decode the CDN-fresh image BEFORE
+      // we mount TapScreen. Without this the user sees a black canvas with
+      // the "tap anywhere" hint floating on it while the <img> is still
+      // downloading (~0.5-3s on a freshly baked URL).
+      await preloadImage(url);
       setFrameAUrl(url);
       setImgRetry(null);
       setPhase('tap');
@@ -242,6 +248,7 @@ export default function TapAndTell() {
       const json = (await res.json()) as { url?: string; error?: string };
       if (!json.url) throw new Error(json.error || 'upload failed');
       setFrameAPrompt('the uploaded photograph');
+      await preloadImage(json.url);
       setFrameAUrl(json.url);
       setPhase('tap');
     } catch (e) {
@@ -294,6 +301,11 @@ export default function TapAndTell() {
         { prompt: finalPlan.next_image_prompt, ref_url: frameAUrl },
         info => setImgRetry(info),
       );
+      // Same reason as Frame A — preload before any UI references this URL.
+      // The gen-video loader paints anchors=[frameAUrl, bUrl], so without
+      // this the "A → B" anchor strip on the loader has B as a black square
+      // until it lazy-loads.
+      await preloadImage(bUrl);
       setFrameBUrl(bUrl);
       setImgRetry(null);
 
@@ -308,6 +320,9 @@ export default function TapAndTell() {
         },
         (info: ProgressInfo) => setVideoProgress(info),
       );
+      // Preload the video to canplay before mounting PlayScreen — otherwise
+      // <video autoPlay> shows a black square for ~1-3s while the MP4 buffers.
+      await preloadVideo(vUrl);
       setVideoUrl(vUrl);
       setPhase('play');
     } catch (e) {
