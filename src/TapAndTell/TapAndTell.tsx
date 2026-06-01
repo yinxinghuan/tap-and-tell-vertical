@@ -488,18 +488,29 @@ export function HomeScreen({
   wallAvatars?: string[];
 }) {
   const [heroIdx, setHeroIdx] = useState(0);
+
+  // Clamp selection if heroEntries shrinks (e.g. seed → loaded). The previous
+  // auto-rotation has been retired: the rotation was racing user taps — the
+  // visible scene could change between render and pointerdown, sending the
+  // player into a different scene from the one they aimed at. Selection is
+  // now fully under user control via the thumb rail below.
   useEffect(() => {
-    if (heroEntries.length <= 1) return;
-    const t = setInterval(() => setHeroIdx(i => (i + 1) % heroEntries.length), 7000);
-    return () => clearInterval(t);
-  }, [heroEntries.length]);
+    if (heroIdx >= heroEntries.length) setHeroIdx(0);
+  }, [heroEntries.length, heroIdx]);
+
+  const railRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = railRef.current?.querySelector<HTMLElement>(
+      `[data-thumb-idx="${heroIdx}"]`,
+    );
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [heroIdx]);
 
   const hero = heroEntries[heroIdx] ?? heroEntries[0];
-  const wallEntries = heroEntries.filter(e => e.id !== hero?.id).slice(0, 4);
 
   return (
     <div className="tt-home">
-      <div className="tt-hero" onPointerDown={() => hero && onRemix(hero)}>
+      <div className="tt-hero" onClick={() => hero && onRemix(hero)}>
         {hero && (
           <video
             src={hero.video_url}
@@ -523,6 +534,27 @@ export function HomeScreen({
           </div>
         )}
       </div>
+
+      {heroEntries.length > 1 && (
+        <div className="tt-thumb-rail" ref={railRef} role="tablist" aria-label="pick a scene">
+          {heroEntries.map((e, i) => (
+            <button
+              key={e.id}
+              type="button"
+              role="tab"
+              aria-selected={i === heroIdx}
+              aria-label={e.caption}
+              data-thumb-idx={i}
+              className={`tt-thumb${i === heroIdx ? ' tt-thumb--selected' : ''}`}
+              onClick={() => setHeroIdx(i)}
+            >
+              {e.a_url
+                ? <img src={e.a_url} alt="" />
+                : <video src={e.video_url} muted playsInline preload="metadata" />}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="tt-pitch">
         <h1 className="tt-pitch__headline">Tell what happens next.</h1>
@@ -553,47 +585,26 @@ export function HomeScreen({
         </div>
       </div>
 
-      {wallEntries.length > 0 && (
-        <div className="tt-wall">
-          <div className="tt-wall__label">{t('home.wall.label')}</div>
-          <div className="tt-wall__row">
-            {wallEntries.map(e => (
-              <div
-                key={e.id}
-                className="tt-wall__cell"
-                onPointerDown={() => onRemix(e)}
-              >
-                <video
-                  src={e.video_url}
-                  poster={e.a_url}
-                  loop muted playsInline autoPlay
-                  preload="metadata"
-                />
-              </div>
-            ))}
-          </div>
-          {onOpenWall && (
-            <button className="tt-wall-cta" onPointerDown={onOpenWall}>
-              {wallAvatars && wallAvatars.length > 0 && (
-                <span className="tt-wall-cta__stack">
-                  {wallAvatars.map((u, i) => (
-                    <img key={i} src={u} alt="" style={{ zIndex: wallAvatars.length - i }} />
-                  ))}
-                </span>
-              )}
-              <span className="tt-wall-cta__text">
-                {wallCount > 0
-                  ? t('home.wall.seeAll', { n: wallCount })
-                  : t('home.wall.beFirst')}
-              </span>
-              <span className="tt-wall-cta__arrow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M13 6l6 6-6 6"/>
-                </svg>
-              </span>
-            </button>
+      {onOpenWall && (
+        <button className="tt-wall-cta" onClick={onOpenWall}>
+          {wallAvatars && wallAvatars.length > 0 && (
+            <span className="tt-wall-cta__stack">
+              {wallAvatars.map((u, i) => (
+                <img key={i} src={u} alt="" style={{ zIndex: wallAvatars.length - i }} />
+              ))}
+            </span>
           )}
-        </div>
+          <span className="tt-wall-cta__text">
+            {wallCount > 0
+              ? t('home.wall.seeAll', { n: wallCount })
+              : t('home.wall.beFirst')}
+          </span>
+          <span className="tt-wall-cta__arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </span>
+        </button>
       )}
     </div>
   );

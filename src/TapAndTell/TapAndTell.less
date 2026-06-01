@@ -275,38 +275,55 @@
   }
 }
 
-.tt-wall {
+// Scene picker — horizontal thumb rail under the big hero. Replaces the old
+// auto-rotating hero + filtered "wall" thumbnails. Every scene is reachable
+// in one tap; thumbs are 3:4 to mirror the vertical hero aspect.
+.tt-thumb-rail {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 4px;
+  gap: 6px;
+  padding: 0 2px 6px;
+  margin-top: -4px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
-.tt-wall__label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: @display;
-  font-style: italic;
-  font-size: 15px;
-  color: @text-3;
-  letter-spacing: 0.01em;
+.tt-thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  aspect-ratio: 3 / 4;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: @radius-sm;
+  overflow: hidden;
+  background: #0a0a0a;
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition: border-color 0.16s ease, transform 0.14s ease, opacity 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0.62;
 
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: @border-subtle;
+  &:active { transform: scale(0.94); }
+  &:hover { opacity: 0.85; }
+
+  img, video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  &--selected {
+    opacity: 1;
+    border-color: @brand-pink;
+    box-shadow: 0 0 0 1px @brand-pink, 0 6px 16px rgba(245, 177, 199, 0.35);
   }
 }
 
-.tt-wall__row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-
-// Beefier wall entry — pink-tinted card with avatar stack + arrow
+// "see what others made" CTA — pink-tinted card with avatar stack + arrow
 .tt-wall-cta {
   margin-top: 8px;
   display: flex;
@@ -361,42 +378,6 @@
     color: @brand-pink;
     flex-shrink: 0;
     svg { width: 100%; height: 100%; display: block; }
-  }
-}
-
-.tt-wall__cell {
-  position: relative;
-  aspect-ratio: 3 / 4;
-  border-radius: @radius-sm;
-  overflow: hidden;
-  background: #000;
-  border: 1px solid @border-subtle;
-  cursor: pointer;
-  transition: transform 0.12s, border-color 0.16s;
-
-  // Faint AlterU watermark shown while video is loading; video covers it once playing
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: url('/tap-and-tell/logo-mark.svg');
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 36% auto;
-    opacity: 0.18;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  &:active { transform: scale(0.97); }
-  &:hover { border-color: @brand-pink; }
-
-  video, img {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-    z-index: 1;
   }
 }
 
