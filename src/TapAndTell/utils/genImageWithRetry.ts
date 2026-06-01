@@ -1,11 +1,11 @@
 // Wrap shared useGenImage.generate() with auto-retry on HTTP 429 rate limits.
 // The platform proxy enforces a per-IP cool-down on genl_image. As of
-// 2026-05-29 the effective gap is ~20s (colleague set 15s; observed slightly
-// higher with jitter). Two img2img calls back-to-back inside `makeYours`
-// (photoreal-prep followed by scene gen) can still trip this on fast paths
-// or when another user on the same IP is generating.
+// 2026-06-01 the effective gap is ~1s (txt2img + img2img both). Per-call
+// latency is ~2.5s+, so sequential code (incl. back-to-back makeYours
+// photoreal-prep + scene gen) rarely 429s. This retry exists for the case
+// where another user on the same IP is generating in the same window.
 //
-// Retries up to N times with 25s backoff (covers the ~20s window + jitter).
+// Retries up to N times with 3s backoff (1s limit + ~2s jitter buffer).
 // Fires onRetry so the orchestrator can surface "the cloud is busy, hold on…"
 // in the loader.
 
@@ -23,7 +23,7 @@ export async function genImageWithRetry(
   opts: GenImageOptions,
   onProgress?: (info: RetryProgress) => void,
   maxAttempts = 4,
-  backoffMs = 25_000,
+  backoffMs = 3_000,
 ): Promise<string> {
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
