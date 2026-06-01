@@ -10,11 +10,16 @@ export interface HeroEntry {
   b_url?: string;
 }
 
-// Seed entries — used as fallback if hero_videos.json fetch fails (Aigram
-// WebView can be flaky with cache: 'no-store' / dynamic JSON). Defensive:
-// include all 5 v2.0 heroes here so even on fetch failure users see variety,
-// not just one cabin (was the symptom: every hero looked like cabin →
-// every remix entered cabin scene). Keep in sync with public/hero_videos.json.
+// Seed entries — fallback if hero_videos.json fetch fails (Aigram WebView can
+// be flaky with cache: 'no-store' / dynamic JSON). Defensive: include every
+// shipped scene so even on fetch failure users see variety, not just one
+// cabin (was the symptom: every hero looked like cabin → every remix entered
+// cabin scene). Keep ids in sync with ARCHETYPES in utils/prompts.ts — the
+// picker selection drives makeYours by id.
+//
+// video_url omitted entries (attic / arcade / laundromat / phone-booth /
+// rooftop) are still being baked by scripts/gen_hero_videos_v2.py. Until then
+// the big hero card falls back to a static <img src={a_url}>.
 const SEED: HeroEntry[] = [
   {
     id: 'kitchen',
@@ -51,6 +56,36 @@ const SEED: HeroEntry[] = [
     a_url: 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779974367981385.webp',
     b_url: 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779974468979576.webp',
   },
+  {
+    id: 'attic',
+    caption: 'the tarp slides off',
+    video_url: '',
+    a_url: 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306563228166.webp',
+  },
+  {
+    id: 'arcade',
+    caption: 'a machine flickers on',
+    video_url: '',
+    a_url: 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306569607095.webp',
+  },
+  {
+    id: 'laundromat',
+    caption: 'a dryer thumps awake',
+    video_url: '',
+    a_url: 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306575517226.webp',
+  },
+  {
+    id: 'phone-booth',
+    caption: 'the phone starts to ring',
+    video_url: '',
+    a_url: 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306581531672.webp',
+  },
+  {
+    id: 'rooftop',
+    caption: 'the city goes silent',
+    video_url: '',
+    a_url: 'https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306587515251.webp',
+  },
 ];
 
 export async function loadHeroEntries(): Promise<HeroEntry[]> {
@@ -72,12 +107,16 @@ export async function loadHeroEntries(): Promise<HeroEntry[]> {
       b_url?: string;
       error?: string;
     }>;
+    // Accept entries with either a video OR a poster image. The new v2.1 scenes
+    // (attic / arcade / laundromat / phone-booth / rooftop) ship with only an
+    // a_url until the async video script catches up; HomeScreen falls back to
+    // a static <img> when video_url is empty.
     const cleaned: HeroEntry[] = list
-      .filter(e => !e.error && e.video_url && e.caption)
+      .filter(e => !e.error && e.caption && (e.video_url || e.a_url))
       .map(e => ({
         id: e.id,
         caption: e.caption!,
-        video_url: e.video_url!,
+        video_url: e.video_url ?? '',
         a_url: e.a_url,
         b_url: e.b_url,
       }));

@@ -1,5 +1,9 @@
 // Pre-baked opening scene archetypes (used when user doesn't upload a photo).
 // Each archetype is a short visual hook + a longer img-gen prompt.
+//
+// Each `id` here MUST match a hero entry id (heroData.ts + public/hero_videos.json).
+// The picker on HomeScreen drives both the showcased hero AND which archetype
+// "Make yours" uses — there is no random selection. Picker == intent.
 
 export interface SceneArchetype {
   id: string;
@@ -14,41 +18,99 @@ export interface SceneArchetype {
 // See feedback_img2img_subject_agnostic_prompt.md.
 export const ARCHETYPES: SceneArchetype[] = [
   {
-    id: 'cabin',
-    label: 'A cabin in the snow',
-    hook: 'A small wooden cabin alone in a snowy pine forest.',
+    id: 'kitchen',
+    label: 'A small kitchen at midnight',
+    hook: 'A small kitchen at midnight with a kettle starting to steam.',
     prompt:
-      'cinematic still of the figure standing outside a small wooden cabin alone ' +
-      'in a snowy pine forest at dusk, warm light glowing from one window, ' +
-      'soft snowfall, the figure half-silhouette against the window glow, ' +
-      'muted color grade, atmospheric, photoreal, 1:1',
+      'cinematic still of the figure standing in a small domestic kitchen at midnight, ' +
+      'single warm pendant light over the counter, an enameled kettle on the stove ' +
+      'just starting to steam softly, dark wood cabinets, condensation on the window, ' +
+      'warm muted palette, atmospheric, photoreal, 1:1',
   },
   {
-    id: 'beach',
-    label: 'A figure on an empty beach',
-    hook: 'A lone figure standing on a wide grey beach at low tide.',
+    id: 'diner',
+    label: 'An empty 1950s diner on a rainy night',
+    hook: 'An empty red-vinyl diner booth with neon outside in the rain.',
     prompt:
-      'cinematic still of the figure standing alone on a wide grey beach at low tide, ' +
-      'overcast sky, soft diffuse light, distant lighthouse on the horizon, ' +
-      'long coat fluttering, desaturated palette, photoreal, 1:1',
+      'cinematic still of the figure sitting alone in a red vinyl booth inside an ' +
+      'empty 1950s diner at night, rain streaks on the window, pink neon reflection in ' +
+      'the glass, jukebox glowing dimly in the corner, fluorescent overhead lighting, ' +
+      'hopper noir mood, photoreal, 1:1',
   },
   {
-    id: 'street',
-    label: 'An empty city street at night',
-    hook: 'A rain-slick city street with one neon sign flickering.',
+    id: 'garden',
+    label: 'A garden table at golden hour',
+    hook: 'A garden table set with mismatched china, string lights overhead.',
     prompt:
-      'cinematic still of the figure walking down an empty narrow city street at night, ' +
-      'wet asphalt reflecting one flickering pink neon sign, fog drifting through, ' +
-      'cinematic noir lighting, photoreal, 1:1',
+      'cinematic still of the figure standing beside a garden table set with mismatched ' +
+      'china and wildflowers, string lights overhead but not yet lit, golden hour sunlight ' +
+      'through the trees, warm summer afternoon, painterly atmospheric, photoreal, 1:1',
   },
   {
-    id: 'desert',
-    label: 'A road through the desert',
-    hook: 'A straight desert road vanishing into a heat-shimmered horizon.',
+    id: 'bookstore',
+    label: 'A narrow used-bookstore aisle',
+    hook: 'A narrow aisle in a dusty used bookstore.',
     prompt:
-      'cinematic still of the figure standing on a straight desert road ' +
-      'vanishing into a heat-shimmered horizon, dusty mesas in the distance, ' +
-      'golden hour, warm tones, long shadow stretching across the asphalt, photoreal, 1:1',
+      'cinematic still of the figure standing in a narrow used-bookstore aisle, tall ' +
+      'shelves of weathered books on both sides, a single warm pendant light, dust drifting ' +
+      'through the beam, deep brown wood, the figure half-turned looking at a shelf, ' +
+      'warm sepia palette, photoreal, 1:1',
+  },
+  {
+    id: 'music',
+    label: 'A sunlit music room with an upright piano',
+    hook: 'An old upright piano in a quiet sunlit music room.',
+    prompt:
+      'cinematic still of the figure seated at an old upright piano in a sunlit music ' +
+      'room, dust motes floating in a shaft of light through tall windows, sheet music open ' +
+      'on the stand, polished wood floor, the figure resting hands on the keys, ' +
+      'muted nostalgic palette, photoreal, 1:1',
+  },
+  {
+    id: 'attic',
+    label: 'A dusty attic under a bare bulb',
+    hook: 'A dusty attic with sheet-covered furniture under a single bulb.',
+    prompt:
+      'cinematic still of the figure standing in a dusty attic with covered furniture ' +
+      'under white sheets, a single bare bulb hanging, dust motes in the slanted afternoon ' +
+      'light from a small dormer window, wooden rafters and exposed beams, the figure ' +
+      'half-shadowed, photoreal, 1:1',
+  },
+  {
+    id: 'arcade',
+    label: 'A 90s arcade after closing',
+    hook: 'Rows of dim arcade cabinets after the lights went out.',
+    prompt:
+      'cinematic still of the figure standing alone in an empty 1990s arcade after ' +
+      'closing, rows of dim cabinet screens, faint neon CRT glow on stained carpet, no ' +
+      'other people, faded posters peeling from the wall, photoreal, 1:1',
+  },
+  {
+    id: 'laundromat',
+    label: 'A 24-hour laundromat at 3am',
+    hook: 'A 24h laundromat under fluorescent light at 3am.',
+    prompt:
+      'cinematic still of the figure sitting on a plastic chair in a 24-hour laundromat ' +
+      'at 3am, fluorescent overhead lights, one dryer door slightly open, linoleum floor, ' +
+      'rain-streaked front window, americana lonely mood, photoreal, 1:1',
+  },
+  {
+    id: 'phone-booth',
+    label: 'A red phone booth in the rain',
+    hook: 'A glass phone booth lit from inside, rain falling.',
+    prompt:
+      'cinematic still of the figure standing inside a red glass phone booth on an empty ' +
+      'street corner at night, rain falling outside, the booth lit warmly from inside, ' +
+      'fogged glass, wet asphalt reflections, the figure half-silhouette, photoreal, 1:1',
+  },
+  {
+    id: 'rooftop',
+    label: 'A city rooftop at golden hour',
+    hook: 'A quiet city rooftop, rusted water tower, hazy skyline.',
+    prompt:
+      'cinematic still of the figure standing on a quiet city rooftop at golden hour, ' +
+      'rusted water tower behind, a forest of antennas in the distance, soft haze over ' +
+      'the skyline, the figure facing the horizon, warm muted palette, photoreal, 1:1',
   },
 ];
 

@@ -72,10 +72,16 @@ const DICT: Record<Locale, Record<string, string>> = {
     'wall.tap-to-play':         'tap to play',
 
     // Archetype labels (rarely seen — when picker shown)
-    'archetype.cabin':       'A cabin in the snow',
-    'archetype.beach':       'A figure on an empty beach',
-    'archetype.street':      'An empty city street at night',
-    'archetype.desert':      'A road through the desert',
+    'archetype.kitchen':     'A small kitchen at midnight',
+    'archetype.diner':       'An empty 1950s diner',
+    'archetype.garden':      'A garden table at golden hour',
+    'archetype.bookstore':   'A used-bookstore aisle',
+    'archetype.music':       'A sunlit music room',
+    'archetype.attic':       'A dusty attic',
+    'archetype.arcade':      'A 90s arcade after closing',
+    'archetype.laundromat':  'A 24h laundromat at 3am',
+    'archetype.phone-booth': 'A phone booth in the rain',
+    'archetype.rooftop':     'A city rooftop at golden hour',
   },
   zh: {
     // Header phase tags
@@ -131,10 +137,16 @@ const DICT: Record<Locale, Record<string, string>> = {
     'wall.tap-to-play':         '点击播放',
 
     // Archetype labels
-    'archetype.cabin':       '雪林中的小木屋',
-    'archetype.beach':       '空旷海滩上的人',
-    'archetype.street':      '深夜空荡的小巷',
-    'archetype.desert':      '沙漠中的公路',
+    'archetype.kitchen':     '深夜的小厨房',
+    'archetype.diner':       '50 年代的空荡餐馆',
+    'archetype.garden':      '黄昏的花园餐桌',
+    'archetype.bookstore':   '旧书店的走道',
+    'archetype.music':       '阳光下的琴房',
+    'archetype.attic':       '尘埃满布的阁楼',
+    'archetype.arcade':      '打烊后的 90 年代街机厅',
+    'archetype.laundromat':  '凌晨 3 点的 24 小时洗衣店',
+    'archetype.phone-booth': '雨中的电话亭',
+    'archetype.rooftop':     '黄昏时分的城市天台',
   },
 };
 

@@ -120,21 +120,26 @@ export default function TapAndTell() {
 
   // ─── Phase actions ────────────────────────────────────────────────────────
 
-  // "Make yours" — two-step pipeline:
+  // "Make yours" — two-step pipeline driven by the picker selection:
   //   1) Photoreal-prep: img2img the avatar with a "realistic portrait" prompt
   //      to translate stylized AI avatars into photoreal intermediates. Cached
   //      per avatar URL — first run ~200s, subsequent runs 0s.
-  //   2) Scene gen: img2img with the photoreal intermediate + scene prompt.
+  //   2) Scene gen: img2img with the photoreal intermediate + the prompt of
+  //      whichever archetype matches the hero the user selected on the home
+  //      picker. NO random pick — the picker selection IS the scene.
   // Demo avatar (geometric svg) skips step 1 and falls back to plain txt2img.
-  const makeYours = useCallback(async () => {
-    const arch = ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
-    setFrameAPrompt(arch.prompt);
-    // Diagnostic: surface which archetype + ref the model is being given.
-    // Helps debug "the model always outputs the same scene" reports — if
-    // the picks ARE varying, the bias is downstream (model interpretation),
-    // not in our pick logic.
-    setArchetypeChosen(arch.id);
-    console.log(`[makeYours] picked archetype = ${arch.id}`);
+  const makeYours = useCallback(async (hero: HeroEntry) => {
+    // Look up archetype by hero id. Archetype ids must match hero ids; if a
+    // hero loaded from hero_videos.json has no matching archetype yet, fall
+    // back to a generic prompt built from the caption so the user still gets
+    // a usable opening frame instead of a hard error.
+    const arch = ARCHETYPES.find(a => a.id === hero.id);
+    const prompt = arch?.prompt
+      ?? `cinematic still of the figure in the scene of ${hero.caption}, ` +
+         `atmospheric, photoreal, 1:1`;
+    setFrameAPrompt(prompt);
+    setArchetypeChosen(arch?.id ?? hero.id);
+    console.log(`[makeYours] using hero=${hero.id} archetype=${arch?.id ?? '(fallback)'}`);
 
     try {
       // Step 1: ensure we have a photoreal intermediate (only for real avatars)
@@ -159,7 +164,7 @@ export default function TapAndTell() {
       setImgRetry(null);
       const url = await genImageWithRetry(
         genImg,
-        { prompt: arch.prompt, ref_url: refUrl },
+        { prompt, ref_url: refUrl },
         info => setImgRetry(info),
       );
       setFrameAUrl(url);
@@ -172,10 +177,13 @@ export default function TapAndTell() {
     }
   }, [genImg, avatar]);
 
-  // "Remix" — start from a hero entry's Frame A
+  // "Remix" — start from a hero entry's Frame A (cheap path, skips photoreal-
+  // prep and scene gen). If the entry has no a_url for some reason, fall
+  // through to the full Make-yours pipeline using the same hero so the user
+  // still ends up in the scene they picked.
   const remixHero = useCallback((entry: HeroEntry) => {
     if (!entry.a_url) {
-      void makeYours();
+      void makeYours(entry);
       return;
     }
     setFrameAUrl(entry.a_url);
@@ -480,7 +488,7 @@ export function HomeScreen({
 }: {
   avatar: Avatar;
   heroEntries: HeroEntry[];
-  onMakeYours: () => void;
+  onMakeYours: (hero: HeroEntry) => void;
   onUpload: (f: File) => void;
   onRemix: (e: HeroEntry) => void;
   onOpenWall?: () => void;
@@ -512,16 +520,22 @@ export function HomeScreen({
     <div className="tt-home">
       <div className="tt-hero" onClick={() => hero && onRemix(hero)}>
         {hero && (
-          <video
-            src={hero.video_url}
-            poster={hero.a_url}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="metadata"
-            key={hero.id}
-          />
+          hero.video_url
+            ? (
+              <video
+                src={hero.video_url}
+                poster={hero.a_url}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                key={hero.id}
+              />
+            )
+            : hero.a_url
+              ? <img src={hero.a_url} alt="" key={hero.id} />
+              : null
         )}
         <div className="tt-hero__overlay" />
         <div className="tt-hero__avatar">
@@ -562,7 +576,11 @@ export function HomeScreen({
       </div>
 
       <div className="tt-cta">
-        <button className="tt-cta__primary" onPointerDown={onMakeYours}>
+        <button
+          className="tt-cta__primary"
+          onPointerDown={() => hero && onMakeYours(hero)}
+          disabled={!hero}
+        >
           Make yours <ArrowIcon />
         </button>
         <div className="tt-cta__avatar-pill">

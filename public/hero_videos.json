@@ -33,5 +33,30 @@
     "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779974367981385.webp",
     "b_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1779974468979576.webp",
     "video_url": "https://cdn.aiwaves.tech/prodsv/telegram/video/123456/20260528-212242.mp4"
+  },
+  {
+    "id": "attic",
+    "caption": "the tarp slides off",
+    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306563228166.webp"
+  },
+  {
+    "id": "arcade",
+    "caption": "a machine flickers on",
+    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306569607095.webp"
+  },
+  {
+    "id": "laundromat",
+    "caption": "a dryer thumps awake",
+    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306575517226.webp"
+  },
+  {
+    "id": "phone-booth",
+    "caption": "the phone starts to ring",
+    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306581531672.webp"
+  },
+  {
+    "id": "rooftop",
+    "caption": "the city goes silent",
+    "a_url": "https://cdn.aiwaves.tech/prod/telegram/avatar/618336286/1780306587515251.webp"
   }
 ]
