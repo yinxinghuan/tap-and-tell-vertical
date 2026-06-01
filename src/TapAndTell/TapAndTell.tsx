@@ -487,6 +487,7 @@ export default function TapAndTell() {
       {phase === 'play' && (
         <PlayScreen
           videoUrl={videoUrl}
+          posterUrl={frameAUrl}
           onAgain={reset}
           onPublish={handlePublish}
           published={publishState === 'published'}
@@ -821,12 +822,14 @@ export function TapScreen({
 
 export function PlayScreen({
   videoUrl,
+  posterUrl,
   onAgain,
   onPublish,
   published = false,
   canPublish = true,
 }: {
   videoUrl: string;
+  posterUrl?: string;
   onAgain: () => void;
   onPublish?: () => void;
   published?: boolean;
@@ -836,7 +839,11 @@ export function PlayScreen({
     <div className="tt-play">
       <div className="tt-play__caption">your story.</div>
       <div className="tt-play__video">
-        <video src={videoUrl} controls autoPlay loop playsInline />
+        {/* poster = the opening frame (frame A). Without it the video tag
+            shows the container's #000 background during the ~100-300ms
+            between mount and first-frame decode — a black flash even
+            though the MP4 bytes are already cached by our preloadVideo. */}
+        <video src={videoUrl} poster={posterUrl} controls autoPlay loop playsInline />
       </div>
       <div className="tt-play__cta">
         {canPublish && onPublish && (

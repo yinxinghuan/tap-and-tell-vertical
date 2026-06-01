@@ -167,6 +167,7 @@ function WallCard({
         <video
           ref={videoRef}
           src={entry.video_url}
+          poster={entry.a_url}
           className="tt-wall-card__video"
           playsInline
           onEnded={() => setEnded(true)}
