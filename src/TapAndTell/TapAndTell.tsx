@@ -1,7 +1,7 @@
 // Tap & Tell — main orchestrator + all phases. AlterU-branded v0.2.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useGenImage, callAigramAPI, telegramId, isInAigram } from '@shared/runtime';
+import { useGenImage, callAigramAPI, telegramId, isInAigram, useGameEvent } from '@shared/runtime';
 import { useGameSave } from '@shared/save';
 import { generateVideo, type ProgressInfo } from './utils/videoApi';
 import { planBeat, pickTeaser, inventScenePrompt, type BeatPlan } from './utils/aiHelpers';
@@ -72,6 +72,10 @@ export default function TapAndTell() {
   const [wallStartIdx, setWallStartIdx] = useState(0);
   const [imgRetry, setImgRetry] = useState<GenImgRetry | null>(null);
   const [archetypeChosen, setArchetypeChosen] = useState<string | null>(null);
+  // When the user took a "continue from here" branch, remember whose
+  // story this is a sequel to — so handlePublish can notify the parent.
+  const [parentEntry, setParentEntry] = useState<WallEntry | null>(null);
+  const events = useGameEvent();
   const wall = useWallEntries();
   // Track the latest archive in a ref so consecutive publishes in the SAME
   // session see each other. useGameSave's savedData state doesn't update on
@@ -344,6 +348,7 @@ export default function TapAndTell() {
     setVideoProgress({ seconds: 0, attempt: 1, maxAttempts: 3, retrying: false });
     setErrMsg('');
     setPublishState('idle');
+    setParentEntry(null);
   }, []);
 
   // Open the swipeable wall view. Refresh data each time we enter.
@@ -364,6 +369,7 @@ export default function TapAndTell() {
     setFrameBUrl('');
     setVideoUrl('');
     setPublishState('idle');
+    setParentEntry(entry);
     setPhase('tap');
   }, []);
 
@@ -390,7 +396,30 @@ export default function TapAndTell() {
     save.persist({ stories: nextStories });
     setPublishState('published');
     wall.refresh();
-  }, [frameAUrl, frameBUrl, videoUrl, tap, clue, avatar, save, wall]);
+    // Notify the parent author that someone continued their story. Skip
+    // self-continuations.
+    const parent = parentEntry;
+    const selfId = telegramId || 'self';
+    if (parent && parent.user_id && parent.user_id !== selfId) {
+      events.trigger('story_continued', {
+        actions: [
+          {
+            type: 'notify',
+            target_user_id: parent.user_id,
+            image: {
+              ref_url: frameBUrl,
+              prompt: 'next beat of a Tap & Tell story, continuation frame',
+            },
+            message: {
+              template: '{sender_name} continued your story.',
+              variables: ['sender_name'],
+            },
+          },
+        ],
+      });
+    }
+    setParentEntry(null);
+  }, [frameAUrl, frameBUrl, videoUrl, tap, clue, avatar, save, wall, parentEntry, events]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
