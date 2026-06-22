@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  base: '/tap-and-tell-vertical/',
+  base: './',
   plugins: [react()],
   preview: {
     host: '0.0.0.0',
