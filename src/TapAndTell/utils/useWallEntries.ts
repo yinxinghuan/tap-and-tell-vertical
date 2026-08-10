@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import {
   callAigramAPI,
-  isInAigram,
+  isInAigramNow,
   getGameUuid,
   type AigramResponse,
 } from '@shared/runtime';
@@ -40,7 +40,7 @@ export function useWallEntries(): {
   useEffect(() => {
     let cancelled = false;
     const sessionId = getGameUuid();
-    if (!isInAigram || !sessionId) {
+    if (!isInAigramNow() || !sessionId) {
       // Outside Aigram (local preview etc) — show empty wall, demo mode
       setEntries([]);
       setLoaded(true);

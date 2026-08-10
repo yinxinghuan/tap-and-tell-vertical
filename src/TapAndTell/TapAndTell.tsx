@@ -1,7 +1,7 @@
 // Tap & Tell — main orchestrator + all phases. AlterU-branded v0.2.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useGenImage, callAigramAPI, telegramId, isInAigram, useGameEvent } from '@shared/runtime';
+import { useGenImage, callAigramAPI, getTelegramId, isInAigramNow, useGameEvent } from '@shared/runtime';
 import { useGameSave } from '@shared/save';
 import { generateVideo, type ProgressInfo } from './utils/videoApi';
 import { planBeat, pickTeaser, inventScenePrompt, type BeatPlan } from './utils/aiHelpers';
@@ -89,9 +89,9 @@ export default function TapAndTell() {
   // Identity ─────────────────────────────────────────────────────────────────
   const [avatar, setAvatar] = useState<Avatar>(DEMO_AVATAR);
   useEffect(() => {
-    if (!isInAigram || !telegramId) return;
+    if (!isInAigramNow() || !getTelegramId()!) return;
     callAigramAPI<{ data?: { name?: string; head_url?: string } }>(
-      `/note/telegram/user/get/info/by/telegram_id?telegram_id=${encodeURIComponent(telegramId)}`,
+      `/note/telegram/user/get/info/by/telegram_id?telegram_id=${encodeURIComponent(getTelegramId()!)}`,
       'GET',
     )
       .then(res => {
@@ -399,7 +399,7 @@ export default function TapAndTell() {
     // Notify the parent author that someone continued their story. Skip
     // self-continuations.
     const parent = parentEntry;
-    const selfId = telegramId || 'self';
+    const selfId = getTelegramId()! || 'self';
     if (parent && parent.user_id && parent.user_id !== selfId) {
       events.trigger('story_continued', {
         actions: [
@@ -520,7 +520,7 @@ export default function TapAndTell() {
           onAgain={reset}
           onPublish={handlePublish}
           published={publishState === 'published'}
-          canPublish={isInAigram}
+          canPublish={isInAigramNow()}
         />
       )}
 
