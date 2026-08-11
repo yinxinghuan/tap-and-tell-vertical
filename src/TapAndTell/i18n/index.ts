@@ -4,7 +4,7 @@
 //   - localStorage `game_locale` override wins
 //   - else navigator.language startsWith('zh') → zh
 //   - else → en
-//   - Test ZH: `localStorage.setItem('game_locale', 'zh'); location.reload()`
+//   - Test ZH: `alteruLocalStorage.setItem('game_locale', 'zh'); location.reload()`
 //
 // What stays English regardless of locale:
 //   The BIG decorative Cormorant Garamond italic headlines — they're part of
@@ -155,7 +155,7 @@ const DICT: Record<Locale, Record<string, string>> = {
 function detect(): Locale {
   if (typeof window === 'undefined') return 'en';
   try {
-    const override = localStorage.getItem('game_locale');
+    const override = alteruLocalStorage.getItem('game_locale');
     if (override === 'zh' || override === 'en') return override;
   } catch {
     /* private mode etc */
