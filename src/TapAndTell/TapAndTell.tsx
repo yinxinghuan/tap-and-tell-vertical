@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGenImage, callAigramAPI, getTelegramId, isInAigramNow, useGameEvent } from '@shared/runtime';
+import { waitForAigramIdentity } from '@shared/runtime/identity-ready';
 import { useGameSave } from '@shared/save';
 import { generateVideo, type ProgressInfo } from './utils/videoApi';
 import { planBeat, pickTeaser, inventScenePrompt, type BeatPlan } from './utils/aiHelpers';
@@ -89,12 +90,16 @@ export default function TapAndTell() {
   // Identity ─────────────────────────────────────────────────────────────────
   const [avatar, setAvatar] = useState<Avatar>(DEMO_AVATAR);
   useEffect(() => {
-    if (!isInAigramNow() || !getTelegramId()!) return;
-    callAigramAPI<{ data?: { name?: string; head_url?: string } }>(
-      `/note/telegram/user/get/info/by/telegram_id?telegram_id=${encodeURIComponent(getTelegramId()!)}`,
-      'GET',
-    )
+    let cancelled = false;
+    void waitForAigramIdentity().then((telegramId) => {
+      if (cancelled || !telegramId) return null;
+      return callAigramAPI<{ data?: { name?: string; head_url?: string } }>(
+        `/note/telegram/user/get/info/by/telegram_id?telegram_id=${encodeURIComponent(telegramId)}`,
+        'GET',
+      );
+    })
       .then(res => {
+        if (!res || cancelled) return;
         const head = res?.data?.head_url;
         const name = res?.data?.name;
         if (head) {
@@ -104,6 +109,7 @@ export default function TapAndTell() {
       .catch(() => {
         /* keep demo */
       });
+    return () => { cancelled = true; };
   }, []);
 
   // Hero entries ────────────────────────────────────────────────────────────
