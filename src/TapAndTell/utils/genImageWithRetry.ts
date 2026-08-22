@@ -10,6 +10,7 @@
 // in the loader.
 
 import type { UseGenImage, GenImageOptions } from '@shared/runtime';
+import { MediaServiceError } from '@shared/runtime/media';
 
 export interface RetryProgress {
   attempt: number;       // 1-indexed
@@ -32,10 +33,12 @@ export async function genImageWithRetry(
       return await genImg.generate(opts);
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
-      const isRateLimit = /HTTP 429|429|rate limit/i.test(lastError.message);
+      const isRateLimit = (e instanceof MediaServiceError && (e.code === 'RATE_LIMITED' || e.code === 'QUEUE_BUSY')) || /HTTP 429|429|rate limit/i.test(lastError.message);
       if (!isRateLimit || attempt >= maxAttempts) break;
       // Backoff sleep, ticking each second so UI can show countdown
-      const totalSec = Math.floor(backoffMs / 1000);
+      const totalSec = e instanceof MediaServiceError && e.retryAfterSeconds
+        ? Math.max(1, e.retryAfterSeconds)
+        : Math.floor(backoffMs / 1000);
       for (let s = totalSec; s > 0; s--) {
         onProgress?.({ attempt: attempt + 1, maxAttempts, retrying: true, secondsLeft: s });
         await new Promise(r => setTimeout(r, 1000));

@@ -5,10 +5,10 @@ import { useGenImage, callAigramAPI, getTelegramId, isInAigramNow, useGameEvent 
 import { waitForAigramIdentity } from '@shared/runtime/identity-ready';
 import { useGameSave } from '@shared/save';
 import { generateVideo, type ProgressInfo } from './utils/videoApi';
+import { MediaServiceError } from '@shared/runtime/media';
 import { planBeat, pickTeaser, inventScenePrompt, type BeatPlan } from './utils/aiHelpers';
-import { ARCHETYPES, PHOTOREAL_PREP_PROMPT } from './utils/prompts';
+import { ARCHETYPES } from './utils/prompts';
 import { loadHeroEntries, getSeed, type HeroEntry } from './utils/heroData';
-import { getPhotoreal, setPhotoreal } from './utils/photorealCache';
 import { genImageWithRetry, type RetryProgress as GenImgRetry } from './utils/genImageWithRetry';
 import { preloadImage, preloadVideo } from './utils/preload';
 import AlteruEmblem from './components/AlteruEmblem';
@@ -21,6 +21,14 @@ type Phase = 'home' | 'prep' | 'gen-a' | 'tap' | 'gen-b' | 'gen-video' | 'play' 
 
 interface TapSpot { x: number; y: number; }
 interface Avatar { url: string; name: string; isDemo: boolean; }
+interface PendingVideo {
+  taskId?: string;
+  frameAUrl: string;
+  frameBUrl: string;
+  prompt: string;
+  clue: string;
+  tap: TapSpot;
+}
 
 /**
  * A single published story.
@@ -63,6 +71,11 @@ const RANDOM_HERO: HeroEntry = {
   caption: 'a scene no one has seen yet',
   video_url: '',
 };
+
+const PORTRAIT_SIZE = { width: 576, height: 1024 } as const;
+const IDENTITY_CONTRACT = 'HARD FULL-VISUAL-IDENTITY CAST MAP. REFERENCE IMAGE OVERRIDES ALL GENERIC CHARACTER WORDS. SUBJECT A MUST keep the exact complete visible identity of the main foreground subject in the reference—not merely its face. Preserve its silhouette, form or species, body proportions, material, head shape, face visibility, covering, mask, costume, colors, patterns and every small accessory. Never reinterpret a covering as clothing over a generic human body. Any face, skin, hair, hands, arms or legs not visible in the reference MUST remain hidden and MUST NOT be invented. ZERO exposed or implied limbs when the reference has none: no hands, arms, sleeves, feet or side appendages. Keep every distinguishing patch, pin, bell and accessory in the same relative location. If hands are absent, stage props beside or against SUBJECT A with clear empty space between them instead of exposing new hands. Do not transfer reference traits to other people, animals or objects. CURRENT SCENE: ';
+const PORTRAIT_RECOMPOSE_PROMPT = 'Recompose this exact image as a true 9:16 portrait cinematic frame. Preserve the visible subject identity, scene, pose, colors and lighting. Extend naturally above and below. Do not add text, logos, borders, UI, faces or body parts that are not visible in the reference.';
+const PENDING_VIDEO_KEY = 'tap-and-tell-pending-media-video-v1';
 
 export default function TapAndTell() {
   const genImg = useGenImage();
@@ -145,16 +158,51 @@ export default function TapAndTell() {
     }
   }, [phase]);
 
+  const runVideo = useCallback(async (pending: PendingVideo) => {
+    setFrameAUrl(pending.frameAUrl);
+    setFrameBUrl(pending.frameBUrl);
+    setClue(pending.clue);
+    setTap(pending.tap);
+    setPhase('gen-video');
+    setVideoProgress({ seconds: 0, attempt: 1, maxAttempts: 3, retrying: false });
+    try {
+      const vUrl = await generateVideo({
+        image_url: pending.frameAUrl,
+        end_image_url: pending.frameBUrl,
+        prompt: pending.prompt,
+        task_id: pending.taskId,
+        onTaskCreated: taskId => alteruLocalStorage.setItem(PENDING_VIDEO_KEY, JSON.stringify({ ...pending, taskId })),
+      }, info => setVideoProgress(info));
+      await preloadVideo(vUrl);
+      alteruLocalStorage.removeItem(PENDING_VIDEO_KEY);
+      setVideoUrl(vUrl);
+      setPhase('play');
+    } catch (e) {
+      setErrMsg(`Video unavailable — ${e instanceof Error ? e.message : String(e)}`);
+      if (e instanceof MediaServiceError && (!e.retryable || e.status === 200)) alteruLocalStorage.removeItem(PENDING_VIDEO_KEY);
+      setVideoUrl('');
+      setPhase('play');
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = alteruLocalStorage.getItem(PENDING_VIDEO_KEY);
+      if (!raw) return;
+      const pending = JSON.parse(raw) as PendingVideo;
+      if (pending.taskId && pending.frameAUrl && pending.frameBUrl && pending.prompt && pending.tap) {
+        void runVideo(pending);
+      }
+    } catch {
+      alteruLocalStorage.removeItem(PENDING_VIDEO_KEY);
+    }
+  }, [runVideo]);
+
   // ─── Phase actions ────────────────────────────────────────────────────────
 
-  // "Make yours" — two-step pipeline driven by the picker selection:
-  //   1) Photoreal-prep: img2img the avatar with a "realistic portrait" prompt
-  //      to translate stylized AI avatars into photoreal intermediates. Cached
-  //      per avatar URL — first run ~200s, subsequent runs 0s.
-  //   2) Scene gen: img2img with the photoreal intermediate + the prompt of
-  //      whichever archetype matches the hero the user selected on the home
-  //      picker. NO random pick — the picker selection IS the scene.
-  // Demo avatar (geometric svg) skips step 1 and falls back to plain txt2img.
+  // "Make yours" sends the original avatar directly to the verified edit path.
+  // This preserves nonhuman, covered and faceless identities instead of first
+  // coercing every reference into a generic photoreal human portrait.
   const makeYours = useCallback(async (hero: HeroEntry) => {
     // Resolve the scene prompt: random sentinel → LLM-invented fresh scene;
     // otherwise → archetype lookup by hero.id (matches because picker and
@@ -185,7 +233,7 @@ export default function TapAndTell() {
       const arch = ARCHETYPES.find(a => a.id === hero.id);
       prompt = arch?.prompt
         ?? `cinematic still of the figure in the scene of ${hero.caption}, ` +
-           `atmospheric, photoreal, 1:1`;
+           `atmospheric, photoreal, vertical 9:16 composition`;
       labelForLoader = arch?.id ?? hero.id;
       console.log(`[makeYours] using hero=${hero.id} archetype=${arch?.id ?? '(fallback)'}`);
     }
@@ -193,29 +241,12 @@ export default function TapAndTell() {
     setArchetypeChosen(labelForLoader);
 
     try {
-      // Step 1: ensure we have a photoreal intermediate (only for real avatars)
-      let refUrl: string | undefined;
-      if (!avatar.isDemo) {
-        const cached = getPhotoreal(avatar.url);
-        if (cached) {
-          refUrl = cached;
-        } else {
-          setPhase('prep');
-          refUrl = await genImageWithRetry(
-            genImg,
-            { prompt: PHOTOREAL_PREP_PROMPT, ref_url: avatar.url },
-            info => setImgRetry(info),
-          );
-          setPhotoreal(avatar.url, refUrl);
-        }
-      }
-
-      // Step 2: scene gen
+      const refUrl = avatar.isDemo ? undefined : avatar.url;
       setPhase('gen-a');
       setImgRetry(null);
       const url = await genImageWithRetry(
         genImg,
-        { prompt, ref_url: refUrl },
+        { prompt: refUrl ? `${IDENTITY_CONTRACT}${prompt.split('the figure').join('SUBJECT A')}` : prompt, ref_url: refUrl, requestedSize: PORTRAIT_SIZE },
         info => setImgRetry(info),
       );
       // Wait for the browser to fetch + decode the CDN-fresh image BEFORE
@@ -237,15 +268,25 @@ export default function TapAndTell() {
   // prep and scene gen). If the entry has no a_url for some reason, fall
   // through to the full Make-yours pipeline using the same hero so the user
   // still ends up in the scene they picked.
-  const remixHero = useCallback((entry: HeroEntry) => {
+  const remixHero = useCallback(async (entry: HeroEntry) => {
     if (!entry.a_url) {
       void makeYours(entry);
       return;
     }
-    setFrameAUrl(entry.a_url);
-    setFrameAPrompt(`the scene of ${entry.caption}`);
-    setPhase('tap');
-  }, [makeYours]);
+    setPhase('gen-a');
+    try {
+      const portraitUrl = await genImageWithRetry(genImg, {
+        prompt: PORTRAIT_RECOMPOSE_PROMPT, ref_url: entry.a_url, requestedSize: PORTRAIT_SIZE,
+      }, info => setImgRetry(info));
+      await preloadImage(portraitUrl);
+      setFrameAUrl(portraitUrl);
+      setFrameAPrompt(`the scene of ${entry.caption}`);
+      setPhase('tap');
+    } catch (e) {
+      setErrMsg(`Couldn't prepare the opening frame — ${e instanceof Error ? e.message : String(e)}`);
+      setPhase('error');
+    }
+  }, [makeYours, genImg]);
 
   const startWithUpload = useCallback(async (file: File) => {
     setPhase('gen-a');
@@ -257,16 +298,19 @@ export default function TapAndTell() {
       });
       const json = (await res.json()) as { url?: string; error?: string };
       if (!json.url) throw new Error(json.error || 'upload failed');
+      const portraitUrl = await genImageWithRetry(genImg, {
+        prompt: PORTRAIT_RECOMPOSE_PROMPT, ref_url: json.url, requestedSize: PORTRAIT_SIZE,
+      }, info => setImgRetry(info));
       setFrameAPrompt('the uploaded photograph');
-      await preloadImage(json.url);
-      setFrameAUrl(json.url);
+      await preloadImage(portraitUrl);
+      setFrameAUrl(portraitUrl);
       setPhase('tap');
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
       setErrMsg(`Couldn't upload the photo — ${m}`);
       setPhase('error');
     }
-  }, []);
+  }, [genImg]);
 
   const handleCanvasTap = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -308,7 +352,7 @@ export default function TapAndTell() {
 
       const bUrl = await genImageWithRetry(
         genImg,
-        { prompt: finalPlan.next_image_prompt, ref_url: frameAUrl },
+        { prompt: finalPlan.next_image_prompt, ref_url: frameAUrl, requestedSize: PORTRAIT_SIZE },
         info => setImgRetry(info),
       );
       // Same reason as Frame A — preload before any UI references this URL.
@@ -319,28 +363,18 @@ export default function TapAndTell() {
       setFrameBUrl(bUrl);
       setImgRetry(null);
 
-      setPhase('gen-video');
-      setVideoProgress({ seconds: 0, attempt: 1, maxAttempts: 3, retrying: false });
-      const vUrl = await generateVideo(
-        {
-          image_url: frameAUrl,
-          end_image_url: bUrl,
-          prompt: finalPlan.video_prompt,
-          env: 'prod',
-        },
-        (info: ProgressInfo) => setVideoProgress(info),
-      );
-      // Preload the video to canplay before mounting PlayScreen — otherwise
-      // <video autoPlay> shows a black square for ~1-3s while the MP4 buffers.
-      await preloadVideo(vUrl);
-      setVideoUrl(vUrl);
-      setPhase('play');
+      const pending: PendingVideo = {
+        frameAUrl, frameBUrl: bUrl, prompt: finalPlan.video_prompt,
+        clue: finalClue, tap: tap ?? { x: 0.5, y: 0.5 },
+      };
+      alteruLocalStorage.setItem(PENDING_VIDEO_KEY, JSON.stringify(pending));
+      await runVideo(pending);
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
       setErrMsg(`Generation failed — ${m}`);
       setPhase('error');
     }
-  }, [tap, frameAPrompt, frameAUrl, genImg]);
+  }, [tap, frameAPrompt, frameAUrl, genImg, runVideo]);
 
   const reset = useCallback(() => {
     setPhase('home');
@@ -366,18 +400,21 @@ export default function TapAndTell() {
 
   // "Continue from here" — start a new beat using the parent story's end frame
   // as our Frame A. (v0.8.2 may add parent_id linkage for a real story tree.)
-  const continueFromEntry = useCallback((entry: WallEntry) => {
-    setFrameAUrl(entry.b_url);
-    setFrameAPrompt(`continuing from ${entry.author_name || 'someone'}'s story`);
-    setTap(null);
-    setClue('');
-    setBeatPlan(null);
-    setFrameBUrl('');
-    setVideoUrl('');
-    setPublishState('idle');
-    setParentEntry(entry);
-    setPhase('tap');
-  }, []);
+  const continueFromEntry = useCallback(async (entry: WallEntry) => {
+    setPhase('gen-a');
+    try {
+      const portraitUrl = await genImageWithRetry(genImg, {
+        prompt: PORTRAIT_RECOMPOSE_PROMPT, ref_url: entry.b_url, requestedSize: PORTRAIT_SIZE,
+      }, info => setImgRetry(info));
+      setFrameAUrl(portraitUrl);
+      setFrameAPrompt(`continuing from ${entry.author_name || 'someone'}'s story`);
+      setTap(null); setClue(''); setBeatPlan(null); setFrameBUrl(''); setVideoUrl('');
+      setPublishState('idle'); setParentEntry(entry); setPhase('tap');
+    } catch (e) {
+      setErrMsg(`Couldn't prepare this continuation — ${e instanceof Error ? e.message : String(e)}`);
+      setPhase('error');
+    }
+  }, [genImg]);
 
   // Publish current story to Aigram save. APPENDS to the user's existing
   // archive (kept inside the single save slot the platform allows per user
@@ -522,11 +559,11 @@ export default function TapAndTell() {
       {phase === 'play' && (
         <PlayScreen
           videoUrl={videoUrl}
-          posterUrl={frameAUrl}
+          posterUrl={frameBUrl || frameAUrl}
           onAgain={reset}
           onPublish={handlePublish}
           published={publishState === 'published'}
-          canPublish={isInAigramNow()}
+          canPublish={isInAigramNow() && !!videoUrl}
         />
       )}
 
@@ -878,7 +915,9 @@ export function PlayScreen({
             shows the container's #000 background during the ~100-300ms
             between mount and first-frame decode — a black flash even
             though the MP4 bytes are already cached by our preloadVideo. */}
-        <video src={videoUrl} poster={posterUrl} controls autoPlay loop playsInline />
+        {videoUrl
+          ? <video src={videoUrl} poster={posterUrl} controls autoPlay loop playsInline />
+          : posterUrl ? <img src={posterUrl} alt="" /> : null}
       </div>
       <div className="tt-play__cta">
         {canPublish && onPublish && (
@@ -890,9 +929,9 @@ export function PlayScreen({
             {published ? t('play.cta.published') : t('play.cta.publish')}
           </button>
         )}
-        <a className="tt-btn" href={videoUrl} target="_blank" rel="noopener noreferrer" download>
+        {videoUrl && <a className="tt-btn" href={videoUrl} target="_blank" rel="noopener noreferrer" download>
           {t('play.cta.download')}
-        </a>
+        </a>}
         <button className="tt-btn tt-btn--primary" onPointerDown={onAgain}>
           tell another
         </button>

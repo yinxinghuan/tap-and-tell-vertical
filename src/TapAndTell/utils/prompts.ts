@@ -25,7 +25,7 @@ export const ARCHETYPES: SceneArchetype[] = [
       'cinematic still of the figure standing in a small domestic kitchen at midnight, ' +
       'single warm pendant light over the counter, an enameled kettle on the stove ' +
       'just starting to steam softly, dark wood cabinets, condensation on the window, ' +
-      'warm muted palette, atmospheric, photoreal, 1:1',
+      'warm muted palette, atmospheric, photoreal, vertical 9:16 composition',
   },
   {
     id: 'diner',
@@ -35,7 +35,7 @@ export const ARCHETYPES: SceneArchetype[] = [
       'cinematic still of the figure sitting alone in a red vinyl booth inside an ' +
       'empty 1950s diner at night, rain streaks on the window, pink neon reflection in ' +
       'the glass, jukebox glowing dimly in the corner, fluorescent overhead lighting, ' +
-      'hopper noir mood, photoreal, 1:1',
+      'hopper noir mood, photoreal, vertical 9:16 composition',
   },
   {
     id: 'garden',
@@ -44,7 +44,7 @@ export const ARCHETYPES: SceneArchetype[] = [
     prompt:
       'cinematic still of the figure standing beside a garden table set with mismatched ' +
       'china and wildflowers, string lights overhead but not yet lit, golden hour sunlight ' +
-      'through the trees, warm summer afternoon, painterly atmospheric, photoreal, 1:1',
+      'through the trees, warm summer afternoon, painterly atmospheric, photoreal, vertical 9:16 composition',
   },
   {
     id: 'bookstore',
@@ -54,7 +54,7 @@ export const ARCHETYPES: SceneArchetype[] = [
       'cinematic still of the figure standing in a narrow used-bookstore aisle, tall ' +
       'shelves of weathered books on both sides, a single warm pendant light, dust drifting ' +
       'through the beam, deep brown wood, the figure half-turned looking at a shelf, ' +
-      'warm sepia palette, photoreal, 1:1',
+      'warm sepia palette, photoreal, vertical 9:16 composition',
   },
   {
     id: 'music',
@@ -64,7 +64,7 @@ export const ARCHETYPES: SceneArchetype[] = [
       'cinematic still of the figure seated at an old upright piano in a sunlit music ' +
       'room, dust motes floating in a shaft of light through tall windows, sheet music open ' +
       'on the stand, polished wood floor, the figure resting hands on the keys, ' +
-      'muted nostalgic palette, photoreal, 1:1',
+      'muted nostalgic palette, photoreal, vertical 9:16 composition',
   },
   {
     id: 'attic',
@@ -74,7 +74,7 @@ export const ARCHETYPES: SceneArchetype[] = [
       'cinematic still of the figure standing in a dusty attic with covered furniture ' +
       'under white sheets, a single bare bulb hanging, dust motes in the slanted afternoon ' +
       'light from a small dormer window, wooden rafters and exposed beams, the figure ' +
-      'half-shadowed, photoreal, 1:1',
+      'half-shadowed, photoreal, vertical 9:16 composition',
   },
   {
     id: 'arcade',
@@ -83,7 +83,7 @@ export const ARCHETYPES: SceneArchetype[] = [
     prompt:
       'cinematic still of the figure standing alone in an empty 1990s arcade after ' +
       'closing, rows of dim cabinet screens, faint neon CRT glow on stained carpet, no ' +
-      'other people, faded posters peeling from the wall, photoreal, 1:1',
+      'other people, faded posters peeling from the wall, photoreal, vertical 9:16 composition',
   },
   {
     id: 'laundromat',
@@ -92,7 +92,7 @@ export const ARCHETYPES: SceneArchetype[] = [
     prompt:
       'cinematic still of the figure sitting on a plastic chair in a 24-hour laundromat ' +
       'at 3am, fluorescent overhead lights, one dryer door slightly open, linoleum floor, ' +
-      'rain-streaked front window, americana lonely mood, photoreal, 1:1',
+      'rain-streaked front window, americana lonely mood, photoreal, vertical 9:16 composition',
   },
   {
     id: 'phone-booth',
@@ -101,7 +101,7 @@ export const ARCHETYPES: SceneArchetype[] = [
     prompt:
       'cinematic still of the figure standing inside a red glass phone booth on an empty ' +
       'street corner at night, rain falling outside, the booth lit warmly from inside, ' +
-      'fogged glass, wet asphalt reflections, the figure half-silhouette, photoreal, 1:1',
+      'fogged glass, wet asphalt reflections, the figure half-silhouette, photoreal, vertical 9:16 composition',
   },
   {
     id: 'rooftop',
@@ -110,7 +110,7 @@ export const ARCHETYPES: SceneArchetype[] = [
     prompt:
       'cinematic still of the figure standing on a quiet city rooftop at golden hour, ' +
       'rusted water tower behind, a forest of antennas in the distance, soft haze over ' +
-      'the skyline, the figure facing the horizon, warm muted palette, photoreal, 1:1',
+      'the skyline, the figure facing the horizon, warm muted palette, photoreal, vertical 9:16 composition',
   },
 ];
 
@@ -135,7 +135,7 @@ export const PHOTOREAL_PREP_PROMPT =
   'costume, sheet, fur, clothing, hair, face, accessories — whatever the ' +
   'subject is (human, character, mascot, animal, ghost, etc), render the ' +
   'same thing in a photoreal style. Natural material texture, high detail, ' +
-  'sharp focus on the subject, photoreal, 1:1';
+  'sharp focus on the subject, photoreal, vertical 9:16 composition';
 
 // System prompt for LLM that turns a tap location + short user text into
 // (a) chip suggestions, (b) the next image prompt, and (c) a video prompt.
@@ -171,7 +171,7 @@ TONE — cinematic, photoreal, atmospheric. Refer to subjects by what they are (
 // directly to the same gen-image pipeline that ARCHETYPES use.
 export const INVENT_SCENE_SYSTEM_PROMPT = `You are a cinematographer inventing a single fresh photoreal opening scene for a short visual story game.
 
-The result will be rendered as a 1:1 photoreal still image with the player's avatar inserted as "the figure". Then the player will tap somewhere on the still and a 5-second video continuation will be generated.
+The result will be rendered as a 9:16 portrait photoreal still image with the player's avatar inserted as "the figure". Then the player will tap somewhere on the still and a 5-second video continuation will be generated.
 
 Your job: invent ONE opening scene that is visually distinct, atmospheric, and gives the player something interesting to tap. The scene should have:
 - a clear, named LOCATION (one place, not a vague mood)
@@ -182,9 +182,9 @@ Your job: invent ONE opening scene that is visually distinct, atmospheric, and g
 Reply with strict JSON ONLY:
 {
   "caption": "3-6 word evocative phrase naming the scene (lowercase, no period)",
-  "prompt": "full img-gen prompt, single paragraph, ending with: photoreal, 1:1"
+  "prompt": "full img-gen prompt, single paragraph, ending with: photoreal, vertical 9:16 composition"
 }
 
 Caption examples: "the lighthouse waits out the storm", "a tram pauses in the snow", "the gallery after closing".
 
-Prompt format: 'cinematic still of the figure {posed/action} in {location}, {specific details}, {time + lighting}, photoreal, 1:1'. Never describe identity (gender / age / looks) — always "the figure". Vary locations across calls: indoor, outdoor, public, private, urban, rural, day, dusk, night, weather. Don't reuse obvious clichés (no more cabins, beaches, attics, etc — the user has already seen those).`;
+Prompt format: 'cinematic still of the figure {posed/action} in {location}, {specific details}, {time + lighting}, photoreal, vertical 9:16 composition'. Never describe identity (gender / age / looks) — always "the figure". Vary locations across calls: indoor, outdoor, public, private, urban, rural, day, dusk, night, weather. Don't reuse obvious clichés (no more cabins, beaches, attics, etc — the user has already seen those).`;
