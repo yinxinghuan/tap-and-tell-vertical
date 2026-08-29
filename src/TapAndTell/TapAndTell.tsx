@@ -77,6 +77,35 @@ const IDENTITY_CONTRACT = 'HARD FULL-VISUAL-IDENTITY CAST MAP. REFERENCE IMAGE O
 const PORTRAIT_RECOMPOSE_PROMPT = 'Recompose this exact image as a true 9:16 portrait cinematic frame. Preserve the visible subject identity, scene, pose, colors and lighting. Extend naturally above and below. Do not add text, logos, borders, UI, faces or body parts that are not visible in the reference.';
 const PENDING_VIDEO_KEY = 'tap-and-tell-pending-media-video-v1';
 
+// Resume metadata is a recovery aid, never a prerequisite for generation.
+// Shared-origin WebViews can deny localStorage or exhaust its quota; those
+// failures must not stop an otherwise valid video request from reaching the
+// Media Service.
+function readPendingVideo(): string | null {
+  try {
+    return alteruLocalStorage.getItem(PENDING_VIDEO_KEY);
+  } catch (error) {
+    console.warn('[video] pending task restore unavailable', error);
+    return null;
+  }
+}
+
+function persistPendingVideo(pending: PendingVideo): void {
+  try {
+    alteruLocalStorage.setItem(PENDING_VIDEO_KEY, JSON.stringify(pending));
+  } catch (error) {
+    console.warn('[video] pending task persistence unavailable; continuing without resume support', error);
+  }
+}
+
+function clearPendingVideo(): void {
+  try {
+    alteruLocalStorage.removeItem(PENDING_VIDEO_KEY);
+  } catch (error) {
+    console.warn('[video] pending task cleanup unavailable', error);
+  }
+}
+
 export default function TapAndTell() {
   const genImg = useGenImage();
   const save = useGameSave<StoryArchive>('tap-and-tell');
@@ -171,15 +200,15 @@ export default function TapAndTell() {
         end_image_url: pending.frameBUrl,
         prompt: pending.prompt,
         task_id: pending.taskId,
-        onTaskCreated: taskId => alteruLocalStorage.setItem(PENDING_VIDEO_KEY, JSON.stringify({ ...pending, taskId })),
+        onTaskCreated: taskId => persistPendingVideo({ ...pending, taskId }),
       }, info => setVideoProgress(info));
       await preloadVideo(vUrl);
-      alteruLocalStorage.removeItem(PENDING_VIDEO_KEY);
+      clearPendingVideo();
       setVideoUrl(vUrl);
       setPhase('play');
     } catch (e) {
       setErrMsg(`Video unavailable — ${e instanceof Error ? e.message : String(e)}`);
-      if (e instanceof MediaServiceError && (!e.retryable || e.status === 200)) alteruLocalStorage.removeItem(PENDING_VIDEO_KEY);
+      if (e instanceof MediaServiceError && (!e.retryable || e.status === 200)) clearPendingVideo();
       setVideoUrl('');
       setPhase('play');
     }
@@ -187,14 +216,14 @@ export default function TapAndTell() {
 
   useEffect(() => {
     try {
-      const raw = alteruLocalStorage.getItem(PENDING_VIDEO_KEY);
+      const raw = readPendingVideo();
       if (!raw) return;
       const pending = JSON.parse(raw) as PendingVideo;
       if (pending.taskId && pending.frameAUrl && pending.frameBUrl && pending.prompt && pending.tap) {
         void runVideo(pending);
       }
     } catch {
-      alteruLocalStorage.removeItem(PENDING_VIDEO_KEY);
+      clearPendingVideo();
     }
   }, [runVideo]);
 
@@ -367,7 +396,7 @@ export default function TapAndTell() {
         frameAUrl, frameBUrl: bUrl, prompt: finalPlan.video_prompt,
         clue: finalClue, tap: tap ?? { x: 0.5, y: 0.5 },
       };
-      alteruLocalStorage.setItem(PENDING_VIDEO_KEY, JSON.stringify(pending));
+      persistPendingVideo(pending);
       await runVideo(pending);
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
